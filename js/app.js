@@ -1848,7 +1848,6 @@ class ReportsPage {
     
     if (!startDateStr || !endDateStr) {
       alert('Date range not provided.');
-      console.log('Sales report generation cancelled: Date range missing.');
       return;
     }
     
@@ -1858,7 +1857,6 @@ class ReportsPage {
     
     if (isNaN(startDate) || isNaN(endDate)) {
       alert('Invalid date format. Please use YYYY-MM-DD.');
-      console.log('Sales report generation cancelled: Invalid date format.');
       return;
     }
     
@@ -1866,17 +1864,34 @@ class ReportsPage {
     const sales = dataService.getSales();
     
     const filteredSales = sales.filter(sale => {
-      // NOTE: sale.date is stored using toLocaleDateString(), which is locale-dependent.
-      // This parsing might need adjustment based on the exact locale format.
       const saleDate = new Date(sale.date);
-      // Ensure valid date and check if it falls within the range (inclusive)
       return !isNaN(saleDate) && saleDate >= startDate && saleDate <= endDate;
     });
     
-    console.log('Filtered Sales Report (by date range):', filteredSales);
+    // Format data for download
+    let reportContent = `Sales Report\n`;
+    reportContent += `Date Range: ${startDateStr} to ${endDateStr}\n\n`;
+    reportContent += `Total Sales Found: ${filteredSales.length}\n\n`;
     
-    // TODO: Implement actual report display (e.g., in a modal or dedicated report view)
-    alert(`Sales report generated for dates between ${startDateStr} and ${endDateStr}. Check console for details.`);
+    if (filteredSales.length > 0) {
+      reportContent += `Sales Details:\n`;
+      filteredSales.forEach(sale => {
+        reportContent += `\nSale ID: INV-${sale.id.toString().padStart(4, '0')}\n`;
+        reportContent += `Date: ${sale.date}\n`;
+        reportContent += `Customer: ${sale.customer}\n`;
+        reportContent += `Total: KES ${sale.total.toFixed(2)}\n`;
+        reportContent += `Status: ${sale.status}\n`;
+        reportContent += `Items: ${sale.items.map(item => `${item.name} (${item.quantity})`).join(', ')}\n`;
+      });
+    } else {
+      reportContent += 'No sales found in the specified date range.\n';
+    }
+    
+    // Download the report
+    const filename = `sales_report_${startDateStr}_to_${endDateStr}.txt`;
+    downloadTextFile(filename, reportContent);
+    
+    alert(`Sales report generated and download should start shortly.`);
   }
   
   generateInventoryReport() {
@@ -1885,10 +1900,39 @@ class ReportsPage {
     // Fetch all inventory data
     const inventory = dataService.getInventory();
     
-    console.log('Inventory Report:', inventory);
+    // Format data for download
+    let reportContent = 'Inventory Report\n\n';
+    reportContent += `Total Items: ${inventory.length}\n\n`;
     
-    // TODO: Implement actual report display (e.g., in a modal or dedicated report view)
-    alert('Inventory report generated. Check console for details.');
+    if (inventory.length > 0) {
+      reportContent += `Inventory Details:\n`;
+      inventory.forEach(item => {
+        let stockStatus = '';
+        if (item.quantity === 0) {
+          stockStatus = 'Out of Stock';
+        } else if (item.quantity <= item.minStock) {
+          stockStatus = 'Low Stock';
+        } else {
+          stockStatus = 'In Stock';
+        }
+        reportContent += `\nProduct: ${item.name}\n`;
+        reportContent += `Category: ${item.category}\n`;
+        reportContent += `SKU: ${item.sku}\n`;
+        reportContent += `Price: KES ${item.price.toFixed(2)}\n`;
+        reportContent += `Stock: ${stockStatus} (${item.quantity})\n`;
+        reportContent += `Min Stock: ${item.minStock}\n`;
+        reportContent += `Value: KES ${(item.price * item.quantity).toFixed(2)}\n`;
+        reportContent += `Description: ${item.description || 'N/A'}\n`;
+      });
+    } else {
+      reportContent += 'No inventory items found.\n';
+    }
+    
+    // Download the report
+    const filename = 'inventory_report.txt';
+    downloadTextFile(filename, reportContent);
+    
+    alert('Inventory report generated and download should start shortly.');
   }
   
   generateCustomerReport() {
@@ -1897,10 +1941,30 @@ class ReportsPage {
     // Fetch all customer data
     const customers = dataService.getCustomers();
     
-    console.log('Customer Analysis Report:', customers);
+    // Format data for download
+    let reportContent = 'Customer Analysis Report\n\n';
+    reportContent += `Total Customers: ${customers.length}\n\n`;
     
-    // TODO: Implement actual report display and analysis (e.g., total spent, last purchase)
-    alert('Customer analysis report generated. Check console for details.');
+    if (customers.length > 0) {
+      reportContent += `Customer Details:\n`;
+      customers.forEach(customer => {
+        reportContent += `\nCustomer ID: CUST-${customer.id.toString().padStart(4, '0')}\n`;
+        reportContent += `Name: ${customer.name}\n`;
+        reportContent += `Phone: ${customer.phone}\n`;
+        reportContent += `Email: ${customer.email || 'N/A'}\n`;
+        reportContent += `Address: ${customer.address || 'N/A'}\n`;
+        reportContent += `Last Purchase: ${customer.lastPurchase}\n`;
+        reportContent += `Total Spent: KES ${customer.totalSpent.toFixed(2)}\n`;
+      });
+    } else {
+      reportContent += 'No customers found.\n';
+    }
+    
+    // Download the report
+    const filename = 'customer_report.txt';
+    downloadTextFile(filename, reportContent);
+    
+    alert('Customer analysis report generated and download should start shortly.');
   }
   
   generatePerformanceReport() {
@@ -1908,16 +1972,40 @@ class ReportsPage {
     
     // Fetch relevant data (e.g., sales data for revenue metrics)
     const sales = dataService.getSales();
+    const inventory = dataService.getInventory();
+    const customers = dataService.getCustomers();
     
-    // Calculate Total Revenue
-    const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.total), 0).toFixed(2);
+    // Calculate metrics
+    const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0).toFixed(2);
+    const totalTransactions = sales.length;
+    const uniqueCustomers = new Set(sales.map(sale => sale.customer)).size;
+    const avgSaleValue = totalTransactions > 0 ? (parseFloat(totalRevenue) / totalTransactions).toFixed(2) : '0.00';
+    const totalInventoryValue = inventory.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+    const lowStockCount = inventory.filter(item => item.quantity <= item.minStock && item.quantity > 0).length;
+    const outOfStockCount = inventory.filter(item => item.quantity === 0).length;
     
-    console.log('Performance Metrics Report:');
-    console.log('  Total Revenue:', `KES ${totalRevenue}`);
-    console.log('  Raw Sales Data:', sales);
+    // Format data for download
+    let reportContent = 'Business Performance Metrics Report\n\n';
+    reportContent += '--- Sales Metrics ---\n';
+    reportContent += `Total Revenue: KES ${totalRevenue}\n`;
+    reportContent += `Total Transactions: ${totalTransactions}\n`;
+    reportContent += `Average Sale Value: KES ${avgSaleValue}\n\n`;
     
-    // TODO: Implement actual performance calculations and display (e.g., total revenue, avg sale value, etc.)
-    alert(`Performance metrics report generated. Total Revenue: KES ${totalRevenue}. Check console for details.`);
+    reportContent += '--- Inventory Metrics ---\n';
+    reportContent += `Total Inventory Items: ${inventory.length}\n`;
+    reportContent += `Total Inventory Value: KES ${totalInventoryValue}\n`;
+    reportContent += `Low Stock Items: ${lowStockCount}\n`;
+    reportContent += `Out of Stock Items: ${outOfStockCount}\n\n`;
+    
+    reportContent += '--- Customer Metrics ---\n';
+    reportContent += `Total Registered Customers: ${customers.length}\n`;
+    reportContent += `Customers with Transactions: ${uniqueCustomers}\n\n`;
+    
+    // Download the report
+    const filename = 'performance_report.txt';
+    downloadTextFile(filename, reportContent);
+    
+    alert('Performance metrics report generated and download should start shortly.');
   }
 }
 
@@ -1956,3 +2044,17 @@ document.addEventListener('DOMContentLoaded', () => {
   
   document.head.appendChild(style);
 });
+
+// Helper function to download text as a file
+function downloadTextFile(filename, text) {
+  const element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}

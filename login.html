@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggrovet Login - React Integration</title>
+    <!-- Additional meta tags for integration -->
+    <meta name="description" content="Aggrovet login portal connecting to React frontend">
+    <!-- You can add CORS headers on your server if needed -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f7f9fb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .login-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 380px;
+            padding: 40px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: #2c8b43;
+            font-size: 28px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .input-group {
+            position: relative;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            border-color: #2c8b43;
+            outline: none;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .login-btn {
+            background-color: #2c8b43;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 12px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+            display: block;
+            text-decoration: none;
+        }
+        
+        .login-btn:hover {
+            background-color: #246e36;
+        }
+        
+        .login-footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .login-footer a {
+            color: #2c8b43;
+            text-decoration: none;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>AGRI CARE</h1>
+            <p>Solutions</p>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-group">
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+                <div class="error-message" id="usernameError"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-group">
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <span class="toggle-password" onclick="togglePasswordVisibility()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </span>
+                </div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+            
+            <a href="#" class="login-btn" onclick="validateLogin(event)">Log In</a>
+        </form>
+        
+        <div class="login-footer">
+            <p>Forgot your password? <a href="#">Reset here</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.toggle-password svg');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                `;
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                `;
+            }
+        }
+        
+        // Validate login credentials
+        function validateLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const usernameError = document.getElementById('usernameError');
+            const passwordError = document.getElementById('passwordError');
+            
+            // Reset error messages
+            usernameError.style.display = 'none';
+            passwordError.style.display = 'none';
+            
+            // Simple validation
+            let isValid = true;
+            
+            if (!username.trim()) {
+                usernameError.textContent = 'Username is required';
+                usernameError.style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!password.trim()) {
+                passwordError.textContent = 'Password is required';
+                passwordError.style.display = 'block';
+                isValid = false;
+            } else if (password.length < 6) {
+                passwordError.textContent = 'Password must be at least 6 characters';
+                passwordError.style.display = 'block';
+                isValid = false;
+            }
+            
+            // If validation passes, authenticate
+            if (isValid) {
+                authenticateUser(username, password);
+            }
+        }
+        
+        // Authentication function that redirects to React app
+        function authenticateUser(username, password) {
+            // For demo purposes, using mock credentials
+            const validCredentials = {
+                'admin': 'admin123',
+                'manager': 'manager123',
+                'staff': 'staff123'
+            };
+            
+            // Define redirect URLs for different user roles
+            const redirectURLs = {
+                'admin': 'http://localhost:8080',
+                'manager': 'http://localhost:3000/manager',
+                'staff': 'http://localhost:3000/'
+            };
+            
+            if (validCredentials[username] && validCredentials[username] === password) {
+                // Successful login
+                alert('Login successful! Redirecting to your React app...');
+                
+                // Store authentication token/user info in localStorage
+                // This allows your React app to know the user is logged in
+                localStorage.setItem('aggrovet_user', JSON.stringify({
+                    username: username,
+                    role: username, // Using username as role for this example
+                    token: 'mock-jwt-token-' + Math.random().toString(36).substring(2),
+                    loggedInAt: new Date().toISOString()
+                }));
+                
+                // Redirect to the appropriate React app route based on user role
+                window.location.href = redirectURLs[username] || 'http://localhost:3000';
+            } else {
+                // Failed login
+                const passwordError = document.getElementById('passwordError');
+                passwordError.textContent = 'Invalid username or password';
+                passwordError.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
