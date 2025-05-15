@@ -35,8 +35,35 @@
       </div>
     </div>
     
-    <!-- Core JavaScript -->
-    <script src="js/dataService.js"></script>
-    <script src="js/app.js"></script>
+    <!-- Authentication Check -->
+    <script>
+      // Check if user is logged in
+      function checkAuth() {
+        const currentUser = JSON.parse(localStorage.getItem('agrovet_currentUser') || 'null');
+        
+        if (!currentUser) {
+          // Not logged in, redirect to login page
+          window.location.href = 'login.html';
+          return false;
+        }
+        
+        // Check if login session is expired (optional, can be implemented later)
+        return true;
+      }
+      
+      // Run auth check before loading app
+      if (checkAuth()) {
+        // User is authenticated, load app scripts
+        const dataServiceScript = document.createElement('script');
+        dataServiceScript.src = 'js/dataService.js';
+        document.body.appendChild(dataServiceScript);
+        
+        dataServiceScript.onload = () => {
+          const appScript = document.createElement('script');
+          appScript.src = 'js/app.js';
+          document.body.appendChild(appScript);
+        };
+      }
+    </script>
   </body>
 </html>
