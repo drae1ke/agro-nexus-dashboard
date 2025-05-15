@@ -1,4 +1,3 @@
-
 /**
  * Main App for AgroVet Dashboard
  */
@@ -162,6 +161,9 @@ class DashboardPage {
     const topProducts = dataService.getTopSellingProducts(5);
     const customers = dataService.getCustomers();
     
+    // Calculate total sales value from actual sales
+    const totalSales = sales.reduce((sum, sale) => sum + parseFloat(sale.total), 0).toFixed(2);
+    
     // Format date for display
     const today = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -182,7 +184,7 @@ class DashboardPage {
             </div>
             <h3 class="stat-title">Inventory Value</h3>
           </div>
-          <p class="stat-value">$${inventoryValue}</p>
+          <p class="stat-value">KES ${inventoryValue}</p>
           <div class="stat-change">
             <span class="change-up"><i class="fa-solid fa-arrow-up"></i> 12%</span>
             <span class="change-text">from last month</span>
@@ -223,7 +225,7 @@ class DashboardPage {
             </div>
             <h3 class="stat-title">Total Sales</h3>
           </div>
-          <p class="stat-value">${sales.length}</p>
+          <p class="stat-value">KES ${totalSales}</p>
           <div class="stat-change">
             <span class="change-up"><i class="fa-solid fa-arrow-up"></i> 5%</span>
             <span class="change-text">from last week</span>
@@ -277,7 +279,7 @@ class DashboardPage {
                   <tr>
                     <td>${sale.customer}</td>
                     <td>${sale.date}</td>
-                    <td class="text-right">$${sale.total.toFixed(2)}</td>
+                    <td class="text-right">KES ${sale.total.toFixed(2)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -466,7 +468,7 @@ class InventoryPage {
                 </div>
                 
                 <div class="form-group">
-                  <label class="form-label" for="product-price">Price ($)</label>
+                  <label class="form-label" for="product-price">Price (KES)</label>
                   <input type="number" id="product-price" class="form-input" step="0.01" min="0" required>
                 </div>
                 
@@ -552,13 +554,13 @@ class InventoryPage {
           </td>
           <td>${item.category}</td>
           <td>${item.sku}</td>
-          <td>$${item.price.toFixed(2)}</td>
+          <td>KES ${item.price.toFixed(2)}</td>
           <td>
             <span class="stock-badge ${stockClass}">
               ${stockStatus} (${item.quantity})
             </span>
           </td>
-          <td>$${(item.price * item.quantity).toFixed(2)}</td>
+          <td>KES ${(item.price * item.quantity).toFixed(2)}</td>
           <td class="action-buttons">
             <button class="action-button edit-button" data-id="${item.id}">
               <i class="fa-solid fa-edit"></i>
@@ -985,7 +987,7 @@ class CustomersPage {
             </div>
           </td>
           <td>${customer.lastPurchase}</td>
-          <td>$${customer.totalSpent.toFixed(2)}</td>
+          <td>KES ${customer.totalSpent.toFixed(2)}</td>
           <td class="action-buttons">
             <button class="action-button edit-customer-button" data-id="${customer.id}">
               <i class="fa-solid fa-edit"></i>
@@ -1237,6 +1239,11 @@ class SalesPage {
     this.sales = [];
     this.filteredSales = [];
     this.searchTerm = '';
+    this.currentSale = {
+      items: [],
+      customer: '',
+      total: 0
+    };
   }
   
   render() {
@@ -1244,8 +1251,11 @@ class SalesPage {
     this.sales = dataService.getSales();
     this.applyFilters();
     
-    // Calculate total sales value
-    const totalSales = this.sales.reduce((sum, sale) => sum + sale.total, 0).toFixed(2);
+    // Calculate total sales value from actual sales
+    const totalSales = this.sales.reduce((sum, sale) => sum + parseFloat(sale.total), 0).toFixed(2);
+    
+    // Calculate number of unique customers
+    const uniqueCustomers = new Set(this.sales.map(sale => sale.customer)).size;
     
     this.container.innerHTML = `
       <div class="page-header">
@@ -1261,7 +1271,7 @@ class SalesPage {
             </div>
             <h3 class="stat-title">Total Sales</h3>
           </div>
-          <p class="stat-value">$${totalSales}</p>
+          <p class="stat-value">KES ${totalSales}</p>
           <div class="stat-change">
             <span class="change-up"><i class="fa-solid fa-arrow-up"></i> 8%</span>
             <span class="change-text">from last month</span>
@@ -1289,7 +1299,7 @@ class SalesPage {
             </div>
             <h3 class="stat-title">Customers Served</h3>
           </div>
-          <p class="stat-value">${new Set(this.sales.map(sale => sale.customer)).size}</p>
+          <p class="stat-value">${uniqueCustomers}</p>
         </div>
         
         <div class="stat-card">
@@ -1299,7 +1309,7 @@ class SalesPage {
             </div>
             <h3 class="stat-title">Avg. Sale Value</h3>
           </div>
-          <p class="stat-value">$${(totalSales / this.sales.length).toFixed(2)}</p>
+          <p class="stat-value">KES ${(parseFloat(totalSales) / this.sales.length).toFixed(2)}</p>
         </div>
       </div>
       
@@ -1335,6 +1345,90 @@ class SalesPage {
           <p class="text-center p-4 text-muted">No sales match your search criteria.</p>
         </div>
       </div>
+      
+      <!-- New Sale Modal -->
+      <div id="new-sale-modal" class="modal-overlay hidden">
+        <div class="modal modal-lg">
+          <div class="modal-header">
+            <h3 class="modal-title">New Sale</h3>
+            <button class="modal-close" id="close-new-sale-modal-btn">
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="new-sale-form">
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label class="form-label" for="sale-customer">Customer</label>
+                  <select id="sale-customer" class="form-select" required>
+                    <option value="">Select Customer</option>
+                    ${dataService.getCustomers().map(customer => 
+                      `<option value="${customer.id}">${customer.name}</option>`
+                    ).join('')}
+                  </select>
+                </div>
+              </div>
+              
+              <div class="sale-items-container">
+                <h4>Sale Items</h4>
+                <div id="sale-items-list">
+                  <!-- Sale items will be added here -->
+                </div>
+                
+                <div class="add-item-container">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="form-label" for="item-product">Product</label>
+                      <select id="item-product" class="form-select">
+                        <option value="">Select Product</option>
+                        ${dataService.getInventory().map(product => 
+                          `<option value="${product.id}" data-price="${product.price}" data-stock="${product.quantity}">
+                            ${product.name} (${product.quantity} in stock)
+                          </option>`
+                        ).join('')}
+                      </select>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label class="form-label" for="item-quantity">Quantity</label>
+                      <input type="number" id="item-quantity" class="form-input" min="1" value="1">
+                    </div>
+                    
+                    <div class="form-group">
+                      <label class="form-label" for="item-price">Price (KES)</label>
+                      <input type="number" id="item-price" class="form-input" step="0.01" min="0" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label class="form-label" for="item-total">Total (KES)</label>
+                      <input type="number" id="item-total" class="form-input" step="0.01" min="0" readonly>
+                    </div>
+                  </div>
+                  
+                  <button type="button" id="add-item-btn" class="button secondary-button">
+                    <i class="fa-solid fa-plus"></i> Add Item
+                  </button>
+                </div>
+              </div>
+              
+              <div class="sale-summary">
+                <div class="summary-row">
+                  <span>Subtotal:</span>
+                  <span id="sale-subtotal">KES 0.00</span>
+                </div>
+                <div class="summary-row">
+                  <span>Total:</span>
+                  <span id="sale-total">KES 0.00</span>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button id="cancel-sale-btn" class="button secondary-button">Cancel</button>
+            <button id="complete-sale-btn" class="button primary-button">Complete Sale</button>
+          </div>
+        </div>
+      </div>
     `;
     
     this.setupEventListeners();
@@ -1354,7 +1448,7 @@ class SalesPage {
           <td>${sale.date}</td>
           <td>${sale.customer}</td>
           <td>${sale.items.length} items</td>
-          <td>$${sale.total.toFixed(2)}</td>
+          <td>KES ${sale.total.toFixed(2)}</td>
           <td>
             <span class="stock-badge in-stock">${sale.status}</span>
           </td>
@@ -1399,32 +1493,235 @@ class SalesPage {
     const newSaleBtn = document.getElementById('new-sale-btn');
     if (newSaleBtn) {
       newSaleBtn.addEventListener('click', () => {
-        alert('New sale functionality to be implemented');
+        this.openNewSaleModal();
       });
     }
     
-    // Setup row action buttons
-    this.setupRowEventListeners();
+    // New sale modal event listeners
+    const closeNewSaleModalBtn = document.getElementById('close-new-sale-modal-btn');
+    if (closeNewSaleModalBtn) {
+      closeNewSaleModalBtn.addEventListener('click', () => {
+        this.closeNewSaleModal();
+      });
+    }
+    
+    const cancelSaleBtn = document.getElementById('cancel-sale-btn');
+    if (cancelSaleBtn) {
+      cancelSaleBtn.addEventListener('click', () => {
+        this.closeNewSaleModal();
+      });
+    }
+    
+    const completeSaleBtn = document.getElementById('complete-sale-btn');
+    if (completeSaleBtn) {
+      completeSaleBtn.addEventListener('click', () => {
+        this.completeSale();
+      });
+    }
+    
+    // Item selection and quantity change
+    const itemProduct = document.getElementById('item-product');
+    const itemQuantity = document.getElementById('item-quantity');
+    const itemPrice = document.getElementById('item-price');
+    const itemTotal = document.getElementById('item-total');
+    
+    if (itemProduct) {
+      itemProduct.addEventListener('change', () => {
+        const selectedOption = itemProduct.options[itemProduct.selectedIndex];
+        if (selectedOption.value) {
+          const price = parseFloat(selectedOption.dataset.price);
+          const stock = parseInt(selectedOption.dataset.stock);
+          itemPrice.value = price.toFixed(2);
+          itemQuantity.max = stock;
+          this.updateItemTotal();
+        }
+      });
+    }
+    
+    if (itemQuantity) {
+      itemQuantity.addEventListener('input', () => {
+        this.updateItemTotal();
+      });
+    }
+    
+    // Add item button
+    const addItemBtn = document.getElementById('add-item-btn');
+    if (addItemBtn) {
+      addItemBtn.addEventListener('click', () => {
+        this.addSaleItem();
+      });
+    }
   }
   
-  setupRowEventListeners() {
-    // View buttons
-    const viewButtons = document.querySelectorAll('.view-sale-button');
-    viewButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        this.viewSale(id);
-      });
-    });
+  openNewSaleModal() {
+    const modal = document.getElementById('new-sale-modal');
+    modal.classList.remove('hidden');
     
-    // Print buttons
-    const printButtons = document.querySelectorAll('.print-sale-button');
-    printButtons.forEach(button => {
+    // Reset form and current sale
+    document.getElementById('new-sale-form').reset();
+    this.currentSale = {
+      items: [],
+      customer: '',
+      total: 0
+    };
+    
+    // Clear items list
+    document.getElementById('sale-items-list').innerHTML = '';
+    
+    // Reset totals
+    document.getElementById('sale-subtotal').textContent = 'KES 0.00';
+    document.getElementById('sale-total').textContent = 'KES 0.00';
+  }
+  
+  closeNewSaleModal() {
+    const modal = document.getElementById('new-sale-modal');
+    modal.classList.add('hidden');
+  }
+  
+  updateItemTotal() {
+    const quantity = parseFloat(document.getElementById('item-quantity').value) || 0;
+    const price = parseFloat(document.getElementById('item-price').value) || 0;
+    const total = quantity * price;
+    document.getElementById('item-total').value = total.toFixed(2);
+  }
+  
+  addSaleItem() {
+    const productSelect = document.getElementById('item-product');
+    const quantity = parseInt(document.getElementById('item-quantity').value);
+    const price = parseFloat(document.getElementById('item-price').value);
+    
+    if (!productSelect.value || quantity <= 0) {
+      alert('Please select a product and enter a valid quantity');
+      return;
+    }
+    
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    const product = {
+      id: productSelect.value,
+      name: selectedOption.text.split(' (')[0],
+      quantity: quantity,
+      price: price,
+      total: quantity * price
+    };
+    
+    // Check if product already exists in sale
+    const existingItemIndex = this.currentSale.items.findIndex(item => item.id === product.id);
+    if (existingItemIndex !== -1) {
+      // Update existing item
+      this.currentSale.items[existingItemIndex].quantity += quantity;
+      this.currentSale.items[existingItemIndex].total = 
+        this.currentSale.items[existingItemIndex].quantity * price;
+    } else {
+      // Add new item
+      this.currentSale.items.push(product);
+    }
+    
+    this.updateSaleItemsList();
+    this.updateSaleTotal();
+    
+    // Reset item form
+    document.getElementById('item-product').value = '';
+    document.getElementById('item-quantity').value = '1';
+    document.getElementById('item-price').value = '';
+    document.getElementById('item-total').value = '';
+  }
+  
+  updateSaleItemsList() {
+    const itemsList = document.getElementById('sale-items-list');
+    itemsList.innerHTML = this.currentSale.items.map((item, index) => `
+      <div class="sale-item">
+        <div class="item-details">
+          <span class="item-name">${item.name}</span>
+          <span class="item-quantity">${item.quantity} x KES ${item.price.toFixed(2)}</span>
+        </div>
+        <div class="item-actions">
+          <span class="item-total">KES ${item.total.toFixed(2)}</span>
+          <button type="button" class="remove-item-btn" data-index="${index}">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+    
+    // Add event listeners for remove buttons
+    const removeButtons = itemsList.querySelectorAll('.remove-item-btn');
+    removeButtons.forEach(button => {
       button.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        this.printSale(id);
+        const index = parseInt(e.currentTarget.dataset.index);
+        this.removeSaleItem(index);
       });
     });
+  }
+  
+  removeSaleItem(index) {
+    this.currentSale.items.splice(index, 1);
+    this.updateSaleItemsList();
+    this.updateSaleTotal();
+  }
+  
+  updateSaleTotal() {
+    const subtotal = this.currentSale.items.reduce((sum, item) => sum + item.total, 0);
+    this.currentSale.total = subtotal;
+    
+    document.getElementById('sale-subtotal').textContent = `KES ${subtotal.toFixed(2)}`;
+    document.getElementById('sale-total').textContent = `KES ${subtotal.toFixed(2)}`;
+  }
+  
+  completeSale() {
+    const customerId = document.getElementById('sale-customer').value;
+    
+    if (!customerId) {
+      alert('Please select a customer');
+      return;
+    }
+    
+    if (this.currentSale.items.length === 0) {
+      alert('Please add at least one item to the sale');
+      return;
+    }
+    
+    // Get customer details
+    const customer = dataService.getCustomerById(customerId);
+    
+    // Create sale object
+    const sale = {
+      id: Date.now(), // Using timestamp as ID
+      date: new Date().toLocaleDateString(),
+      customer: customer.name,
+      items: this.currentSale.items,
+      total: this.currentSale.total,
+      status: 'Completed'
+    };
+    
+    try {
+      // Add sale to data service
+      dataService.addSale(sale);
+      
+      // Update inventory quantities
+      this.currentSale.items.forEach(item => {
+        const inventoryItem = dataService.getInventoryItemById(item.id);
+        if (inventoryItem) {
+          inventoryItem.quantity -= item.quantity;
+          dataService.updateInventoryItem(item.id, inventoryItem);
+        }
+      });
+      
+      // Update customer's last purchase and total spent
+      customer.lastPurchase = sale.date;
+      customer.totalSpent += sale.total;
+      dataService.updateCustomer(customerId, customer);
+      
+      // Reload data and refresh table
+      this.sales = dataService.getSales();
+      this.applyFilters();
+      this.updateTable();
+      
+      // Close modal and show success message
+      this.closeNewSaleModal();
+      alert('Sale completed successfully!');
+    } catch (error) {
+      alert('Error completing sale: ' + error.message);
+    }
   }
   
   updateTable() {
@@ -1438,18 +1735,6 @@ class SalesPage {
     } else {
       emptyMessage.classList.add('hidden');
     }
-    
-    this.setupRowEventListeners();
-  }
-  
-  viewSale(id) {
-    alert(`View sale details for ID: ${id}`);
-    // This would open a modal with sale details
-  }
-  
-  printSale(id) {
-    alert(`Print invoice for ID: ${id}`);
-    // This would open a print preview or print directly
   }
 }
 
@@ -1479,7 +1764,7 @@ class ReportsPage {
           <p class="report-description">
             Generate comprehensive sales reports with various filters and date ranges.
           </p>
-          <button class="button primary-button">Generate Report</button>
+          <button class="button primary-button" data-report-type="sales">Generate Report</button>
         </div>
         
         <div class="report-card">
@@ -1492,7 +1777,7 @@ class ReportsPage {
           <p class="report-description">
             View stock levels, inventory value, and product performance metrics.
           </p>
-          <button class="button primary-button">Generate Report</button>
+          <button class="button primary-button" data-report-type="inventory">Generate Report</button>
         </div>
         
         <div class="report-card">
@@ -1505,7 +1790,7 @@ class ReportsPage {
           <p class="report-description">
             Analyze customer purchase behavior and identify key clients.
           </p>
-          <button class="button primary-button">Generate Report</button>
+          <button class="button primary-button" data-report-type="customers">Generate Report</button>
         </div>
         
         <div class="report-card">
@@ -1518,18 +1803,121 @@ class ReportsPage {
           <p class="report-description">
             Track business performance with key metrics and growth indicators.
           </p>
-          <button class="button primary-button">Generate Report</button>
+          <button class="button primary-button" data-report-type="performance">Generate Report</button>
         </div>
       </div>
     `;
     
     // Add event listeners for report buttons
-    const reportButtons = this.container.querySelectorAll('.button');
+    const reportButtons = this.container.querySelectorAll('.button[data-report-type]');
     reportButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        alert('Report generation functionality to be implemented');
+      button.addEventListener('click', (e) => {
+        const reportType = e.currentTarget.dataset.reportType;
+        this.handleGenerateReport(reportType);
       });
     });
+  }
+  
+  handleGenerateReport(reportType) {
+    console.log(`Attempting to generate report type: ${reportType}`);
+    switch (reportType) {
+      case 'sales':
+        this.generateSalesReport();
+        break;
+      case 'inventory':
+        this.generateInventoryReport();
+        break;
+      case 'customers':
+        this.generateCustomerReport();
+        break;
+      case 'performance':
+        this.generatePerformanceReport();
+        break;
+      default:
+        console.warn(`Unknown report type: ${reportType}`);
+        alert(`Unknown report type: ${reportType}`);
+    }
+  }
+  
+  generateSalesReport() {
+    console.log('Generating Sales Report...');
+    
+    // Prompt for date range (requesting YYYY-MM-DD format)
+    const startDateStr = prompt('Enter start date (YYYY-MM-DD):');
+    const endDateStr = prompt('Enter end date (YYYY-MM-DD):');
+    
+    if (!startDateStr || !endDateStr) {
+      alert('Date range not provided.');
+      console.log('Sales report generation cancelled: Date range missing.');
+      return;
+    }
+    
+    // Attempt to parse input dates
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    
+    if (isNaN(startDate) || isNaN(endDate)) {
+      alert('Invalid date format. Please use YYYY-MM-DD.');
+      console.log('Sales report generation cancelled: Invalid date format.');
+      return;
+    }
+    
+    // Fetch and filter sales data
+    const sales = dataService.getSales();
+    
+    const filteredSales = sales.filter(sale => {
+      // NOTE: sale.date is stored using toLocaleDateString(), which is locale-dependent.
+      // This parsing might need adjustment based on the exact locale format.
+      const saleDate = new Date(sale.date);
+      // Ensure valid date and check if it falls within the range (inclusive)
+      return !isNaN(saleDate) && saleDate >= startDate && saleDate <= endDate;
+    });
+    
+    console.log('Filtered Sales Report (by date range):', filteredSales);
+    
+    // TODO: Implement actual report display (e.g., in a modal or dedicated report view)
+    alert(`Sales report generated for dates between ${startDateStr} and ${endDateStr}. Check console for details.`);
+  }
+  
+  generateInventoryReport() {
+    console.log('Generating Inventory Report...');
+    
+    // Fetch all inventory data
+    const inventory = dataService.getInventory();
+    
+    console.log('Inventory Report:', inventory);
+    
+    // TODO: Implement actual report display (e.g., in a modal or dedicated report view)
+    alert('Inventory report generated. Check console for details.');
+  }
+  
+  generateCustomerReport() {
+    console.log('Generating Customer Analysis Report...');
+    
+    // Fetch all customer data
+    const customers = dataService.getCustomers();
+    
+    console.log('Customer Analysis Report:', customers);
+    
+    // TODO: Implement actual report display and analysis (e.g., total spent, last purchase)
+    alert('Customer analysis report generated. Check console for details.');
+  }
+  
+  generatePerformanceReport() {
+    console.log('Generating Performance Metrics Report...');
+    
+    // Fetch relevant data (e.g., sales data for revenue metrics)
+    const sales = dataService.getSales();
+    
+    // Calculate Total Revenue
+    const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.total), 0).toFixed(2);
+    
+    console.log('Performance Metrics Report:');
+    console.log('  Total Revenue:', `KES ${totalRevenue}`);
+    console.log('  Raw Sales Data:', sales);
+    
+    // TODO: Implement actual performance calculations and display (e.g., total revenue, avg sale value, etc.)
+    alert(`Performance metrics report generated. Total Revenue: KES ${totalRevenue}. Check console for details.`);
   }
 }
 

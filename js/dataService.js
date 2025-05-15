@@ -1,4 +1,3 @@
-
 /**
  * Data Service for AgroVet Dashboard
  * Handles local storage operations and data management
@@ -430,6 +429,15 @@ const dataService = {
     
     // Update inventory quantities
     this.updateInventoryAfterSale(newSale.items);
+    
+    // Update customer's total spent
+    const customers = this.getCustomers();
+    const customerIndex = customers.findIndex(c => c.name === sale.customer);
+    if (customerIndex !== -1) {
+      customers[customerIndex].totalSpent = (parseFloat(customers[customerIndex].totalSpent) || 0) + parseFloat(sale.total);
+      customers[customerIndex].lastPurchase = newSale.date;
+      localStorage.setItem('agrovet_customers', JSON.stringify(customers));
+    }
     
     return newSale;
   },
