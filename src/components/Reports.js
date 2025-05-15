@@ -1,9 +1,10 @@
-
 /**
  * Reports Component for Agrovet Dashboard
  */
 
 import dataService from '../services/dataService.js';
+import { createRoot } from 'react-dom/client';
+import Icons from './Icons';
 
 export default class Reports {
   constructor(container) {
@@ -33,6 +34,19 @@ export default class Reports {
     const defaultStartDate = formatDate(firstDayOfMonth);
     const defaultEndDate = formatDate(today);
     
+    // Create icon containers
+    const inventoryIconContainer = document.createElement('div');
+    const inventoryIconRoot = createRoot(inventoryIconContainer);
+    inventoryIconRoot.render(<Icons.Inventory />);
+
+    const alertIconContainer = document.createElement('div');
+    const alertIconRoot = createRoot(alertIconContainer);
+    alertIconRoot.render(<Icons.Alert />);
+
+    const salesIconContainer = document.createElement('div');
+    const salesIconRoot = createRoot(salesIconContainer);
+    salesIconRoot.render(<Icons.Sales />);
+    
     this.container.innerHTML = `
       <div class="p-6 max-w-full">
         <header class="mb-6">
@@ -44,7 +58,7 @@ export default class Reports {
           <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center mb-4">
               <div class="bg-agrovet-100 p-3 rounded-lg">
-                <i class="icon-inventory text-agrovet-600"></i>
+                <div class="text-agrovet-600">${inventoryIconContainer.innerHTML}</div>
               </div>
               <h3 class="ml-4 font-medium text-gray-700">Total Inventory Value</h3>
             </div>
@@ -55,7 +69,7 @@ export default class Reports {
           <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center mb-4">
               <div class="bg-orange-100 p-3 rounded-lg">
-                <i class="icon-alert text-orange-600"></i>
+                <div class="text-orange-600">${alertIconContainer.innerHTML}</div>
               </div>
               <h3 class="ml-4 font-medium text-gray-700">Low Stock Items</h3>
             </div>
@@ -66,7 +80,7 @@ export default class Reports {
           <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center mb-4">
               <div class="bg-purple-100 p-3 rounded-lg">
-                <i class="icon-sales text-purple-600"></i>
+                <div class="text-purple-600">${salesIconContainer.innerHTML}</div>
               </div>
               <h3 class="ml-4 font-medium text-gray-700">Total Sales</h3>
             </div>

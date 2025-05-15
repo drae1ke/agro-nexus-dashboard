@@ -1,10 +1,11 @@
-
 /**
  * Dashboard Component for Agrovet Management System
  */
 
 import dataService from '../services/dataService.js';
 import { format } from 'date-fns';
+import { createRoot } from 'react-dom/client';
+import Icons from './Icons';
 
 export default class Dashboard {
   constructor(container) {
@@ -21,6 +22,23 @@ export default class Dashboard {
     
     const todayDate = format(new Date(), 'EEEE, MMMM do, yyyy');
     
+    // Create icon containers
+    const inventoryIconContainer = document.createElement('div');
+    const inventoryIconRoot = createRoot(inventoryIconContainer);
+    inventoryIconRoot.render(<Icons.Inventory />);
+
+    const alertIconContainer = document.createElement('div');
+    const alertIconRoot = createRoot(alertIconContainer);
+    alertIconRoot.render(<Icons.Alert />);
+
+    const customersIconContainer = document.createElement('div');
+    const customersIconRoot = createRoot(customersIconContainer);
+    customersIconRoot.render(<Icons.Customers />);
+
+    const salesIconContainer = document.createElement('div');
+    const salesIconRoot = createRoot(salesIconContainer);
+    salesIconRoot.render(<Icons.Sales />);
+    
     this.container.innerHTML = `
       <div class="p-6 max-w-full">
         <header class="mb-8">
@@ -32,7 +50,7 @@ export default class Dashboard {
           <div class="dashboard-card bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center mb-4">
               <div class="bg-agrovet-100 p-3 rounded-lg">
-                <i class="icon-inventory text-agrovet-600"></i>
+                <div class="text-agrovet-600">${inventoryIconContainer.innerHTML}</div>
               </div>
               <h3 class="ml-4 text-gray-500 font-medium">Inventory Value</h3>
             </div>
@@ -46,7 +64,7 @@ export default class Dashboard {
           <div class="dashboard-card bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center mb-4">
               <div class="bg-orange-100 p-3 rounded-lg">
-                <i class="icon-alert text-orange-600"></i>
+                <div class="text-orange-600">${alertIconContainer.innerHTML}</div>
               </div>
               <h3 class="ml-4 text-gray-500 font-medium">Low Stock Items</h3>
             </div>
@@ -59,7 +77,7 @@ export default class Dashboard {
           <div class="dashboard-card bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center mb-4">
               <div class="bg-blue-100 p-3 rounded-lg">
-                <i class="icon-customers text-blue-600"></i>
+                <div class="text-blue-600">${customersIconContainer.innerHTML}</div>
               </div>
               <h3 class="ml-4 text-gray-500 font-medium">Total Customers</h3>
             </div>
@@ -73,7 +91,7 @@ export default class Dashboard {
           <div class="dashboard-card bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center mb-4">
               <div class="bg-purple-100 p-3 rounded-lg">
-                <i class="icon-sales text-purple-600"></i>
+                <div class="text-purple-600">${salesIconContainer.innerHTML}</div>
               </div>
               <h3 class="ml-4 text-gray-500 font-medium">Total Sales</h3>
             </div>

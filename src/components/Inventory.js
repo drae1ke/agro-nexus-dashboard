@@ -1,9 +1,10 @@
-
 /**
  * Inventory Management Component for Agrovet Dashboard
  */
 
 import dataService from '../services/dataService.js';
+import { createRoot } from 'react-dom/client';
+import Icons from './Icons';
 
 export default class Inventory {
   constructor(container) {
@@ -62,6 +63,19 @@ export default class Inventory {
   render() {
     const categories = this.getCategories();
     
+    // Create icon containers
+    const plusIconContainer = document.createElement('div');
+    const plusIconRoot = createRoot(plusIconContainer);
+    plusIconRoot.render(<Icons.Plus />);
+
+    const searchIconContainer = document.createElement('div');
+    const searchIconRoot = createRoot(searchIconContainer);
+    searchIconRoot.render(<Icons.Search />);
+
+    const xIconContainer = document.createElement('div');
+    const xIconRoot = createRoot(xIconContainer);
+    xIconRoot.render(<Icons.X />);
+    
     this.container.innerHTML = `
       <div class="p-6 max-w-full">
         <header class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -70,7 +84,7 @@ export default class Inventory {
             <p class="text-gray-500">Manage your stock, add new items and monitor inventory levels</p>
           </div>
           <button id="addInventoryBtn" class="bg-agrovet-600 hover:bg-agrovet-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-            <i class="icon-plus"></i>
+            <div>${plusIconContainer.innerHTML}</div>
             <span>Add New Item</span>
           </button>
         </header>
@@ -80,7 +94,7 @@ export default class Inventory {
             <div class="flex items-center gap-3 flex-wrap">
               <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                  <i class="icon-search"></i>
+                  <div>${searchIconContainer.innerHTML}</div>
                 </span>
                 <input 
                   id="inventorySearch" 
@@ -138,7 +152,7 @@ export default class Inventory {
           <div class="border-b border-gray-200 p-4 flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-800" id="modalTitle">Add New Inventory Item</h3>
             <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
-              <i class="icon-x"></i>
+              <div>${xIconContainer.innerHTML}</div>
             </button>
           </div>
           <form id="inventoryForm" class="p-6">
